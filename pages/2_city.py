@@ -1,13 +1,5 @@
 import warnings
-import geopandas as gpd
-import matplotlib.pyplot as plt
-from shapely.geometry import Point, Polygon
 import streamlit as st
-import fiona
-
-
-#portugal = gpd.read_file('datasets/portugal.shp')
-#portugal.plot()
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
