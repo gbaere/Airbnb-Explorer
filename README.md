@@ -7,3 +7,4 @@
 
 ![image](https://github.com/gbaere/Airbnb-Explorer/assets/397533/c5af75d5-b30f-474a-9bd1-19288a33278e)
 
+Continuing my studies in Data Science, I developed an app with Streamlit, using Pandas and Folium to perform statistical and spatial analysis of Airbnb information
