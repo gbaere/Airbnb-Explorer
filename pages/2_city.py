@@ -1,7 +1,55 @@
 import warnings
 import streamlit as st
+import folium
+from streamlit_folium import folium_static
+from branca.colormap import LinearColormap
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+# metodo para gerar o mapa
+def configure_circles(dataset):
+    # Inicialização
+
+    # Tiro a média das coordenadas da região para centrar o mapa
+    lat_mean = dataset["latitude"].mean()
+    long_mean = dataset["longitude"].mean()
+
+    mapa = folium.Map(location=[lat_mean, long_mean], zoom_start=12)
+    # Selecionar as colunas de latitude e longitude
+    lat_lon_data = dataset[["latitude", "longitude", "price", "name"]]
+    # Encontrar os valores mínimo e máximo de preço para normalização
+    min_price = lat_lon_data["price"].min()
+    max_price = lat_lon_data["price"].max()
+
+    colormap = LinearColormap(
+        colors=["green", "yellow", "red"],
+        vmin=min_price,
+        vmax=max_price,
+    )
+
+    for index, row in lat_lon_data.iterrows():
+        # Calcula a proporção do preço em relação ao mínimo e máximo
+        price_ratio = (row["price"] - min_price) / (max_price - min_price)
+        # Calcula a cor com base na proporção
+        color = f'hsl({120 - int(price_ratio * 120)}, 100%, 50%)'
+
+        folium.CircleMarker(
+            location=[row['latitude'], row['longitude']],
+            radius=5,  # Tamanho do círculo
+            color=color,  # Cor do círculo com base no preço
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.8,
+            popup=f"${row['price']:.2f}",
+            tooltip=row['name']
+        ).add_to(mapa)
+
+    colormap.caption = "Price Gradient"  # Legenda da barra vertical
+    colormap.add_to(mapa)
+
+    return mapa
+
 
 st.set_page_config(
     page_title="Neighbourhood",
@@ -34,6 +82,14 @@ if "data" in st.session_state:
     columns = ["name", "neighbourhood_cleansed", "picture_url", "host_name", "host_thumbnail_url", "host_url",
                "host_response_rate", "host_acceptance_rate", "price", "minimum_nights",
                "review_scores_rating"]
+
+    # Configurar e exibir o mapa marcando cada imovel no mapa no mapa
+    mapa = configure_circles(df_result)
+
+    st.markdown("Abaixo o mapa da localização de cada imóvel")
+    folium_static(mapa, height=400, width=850)
+
+    st.divider()
 
     st.dataframe(df_result[columns], column_config=
     {
