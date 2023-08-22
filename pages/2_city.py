@@ -1,15 +1,15 @@
 import warnings
 import streamlit as st
 import folium
+import pandas as pd
+import plotly.express as px
 from streamlit_folium import folium_static
 from branca.colormap import LinearColormap
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-
 # metodo para gerar o mapa
 def configure_circles(dataset):
-    # Inicialização
 
     # Tiro a média das coordenadas da região para centrar o mapa
     lat_mean = dataset["latitude"].mean()
@@ -22,8 +22,9 @@ def configure_circles(dataset):
     min_price = lat_lon_data["price"].min()
     max_price = lat_lon_data["price"].max()
 
+    # aqui eu gero a barra horizontal no mapa da faixa de calor dos preços
     colormap = LinearColormap(
-        colors=["green", "yellow", "red"],
+        colors=["black", "green", "yellow", "red"],
         vmin=min_price,
         vmax=max_price,
     )
@@ -34,6 +35,7 @@ def configure_circles(dataset):
         # Calcula a cor com base na proporção
         color = f'hsl({120 - int(price_ratio * 120)}, 100%, 50%)'
 
+        # aqui eu crio os marcardores em forma de circulo
         folium.CircleMarker(
             location=[row['latitude'], row['longitude']],
             radius=5,  # Tamanho do círculo
@@ -45,7 +47,17 @@ def configure_circles(dataset):
             tooltip=row['name']
         ).add_to(mapa)
 
-    colormap.caption = "Price Gradient"  # Legenda da barra vertical
+    folium.TileLayer('openstreetmap').add_to(mapa)
+    folium.TileLayer('cartodb positron').add_to(mapa)
+    folium.TileLayer('stamenterrain').add_to(mapa)
+    folium.TileLayer('stamentoner').add_to(mapa)
+    folium.TileLayer('stamenwatercolor').add_to(mapa)
+    folium.TileLayer('cartodbdark_matter').add_to(mapa)
+
+
+    folium.LayerControl().add_to(mapa)
+
+    colormap.caption = "Faixa de preços (Price gradient)"  # Legenda da barra vertical
     colormap.add_to(mapa)
 
     return mapa
@@ -87,9 +99,11 @@ if "data" in st.session_state:
     mapa = configure_circles(df_result)
 
     st.markdown("Abaixo o mapa da localização de cada imóvel")
-    folium_static(mapa, height=400, width=850)
+    folium_static(mapa, height=400, width=950)
 
     st.divider()
+
+    max_price = round(df_result["price"].astype(int).max())
 
     st.dataframe(df_result[columns], column_config=
     {
@@ -109,5 +123,29 @@ if "data" in st.session_state:
         "minimum_nights": st.column_config.NumberColumn(label="Minimum Nights"),
         "review_scores_rating": st.column_config.ProgressColumn("Review Scores Rating", format="%f", min_value=0,
          max_value=int(df_result["review_scores_rating"].max())),
+        "latitude": st.column_config.Column(label="Lat"),
+        "longitude": st.column_config.Column(label="Long")
     })
 
+
+    mean_price_city = int(df_result["price"].mean())
+    mean_price_all = int(st.session_state["data"]["price"].mean())
+
+    # Criando um DataFrame com os valores
+    data = pd.DataFrame({
+        "Categoria": [city_selected, "Região"],
+        "Média de Preço": [mean_price_city, mean_price_all]
+    })
+
+    # Criando o gráfico usando Plotly Express
+    fig = px.bar(data, x="Média de Preço", y="Categoria", orientation="h",
+                 labels={"Média de Preço": "Média de Preço", "Categoria": "Categorias"},
+                 title=f"Médias de Preço da {city_selected} X Região")
+
+    # Exibindo o gráfico usando Streamlit
+    st.plotly_chart(fig)
+
+
+
+
+    #st.altair_chart(chart, use_container_width=True)

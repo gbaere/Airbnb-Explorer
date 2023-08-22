@@ -1,6 +1,5 @@
 import os
 import webbrowser
-
 import folium
 import pandas as pd
 import streamlit as st
