@@ -3,6 +3,8 @@ import webbrowser
 import folium
 import pandas as pd
 import streamlit as st
+import plotly.express as px
+from folium import plugins
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 
@@ -47,7 +49,7 @@ def load_and_process_data():
 
 
 def configure_heatmap(dataset):
-    mapa = folium.Map(location=["39.557191", "-7.8536599"], zoom_start=7)
+    mapa = folium.Map(location=["39.55", "-7.85"], zoom_start=8)
 
     # Selecionar as colunas de latitude e longitude
     lat_lon_data = dataset[["latitude", "longitude"]]
@@ -56,10 +58,29 @@ def configure_heatmap(dataset):
     heat_data = lat_lon_data.groupby(["latitude", "longitude"]).size().reset_index(name="count")
     heat_data = heat_data.values.tolist()
 
-    heat_map = HeatMap(heat_data, min_opacity=0.5, blur=18)
+    heat_map = HeatMap(heat_data, min_opacity=0.5, blur=16)
     heat_map.add_to(mapa)
     return mapa
 
+
+def configure_price_heatmap(dataset):
+    fig = px.scatter_mapbox(dataset,
+                            lat='latitude',
+                            lon='longitude',
+                            color='price',
+                            size='price',
+                            color_continuous_scale='Viridis',  # Esquema de cores
+                            size_max=25,  # Tamanho máximo dos pontos
+                            mapbox_style='open-street-map',  # Estilo do mapa
+                            title='Mapa de Calor de Imóveis por Preço',
+                            hover_data=['latitude', 'longitude', 'price', 'name'],  # Dados para exibir no hover
+                            labels={'price': 'Preço'})
+
+    # Personalizar o texto que aparece no hover
+    fig.update_traces(
+        hovertemplate='Nome: %{customdata[3]}<br>Preço: R$%{customdata[2]:,.2f}<br>Latitude: %{customdata[0]:.4f}<br>Longitude: %{customdata[1]:.4f}')
+
+    return fig
 
 def generate_and_open_map(dataset):
     mapa = configure_heatmap(dataset)
@@ -82,6 +103,7 @@ st.set_page_config(
     layout="wide"
 )
 
+
 st.write("# Explore Airbnb information for Lisbon and Region")
 st.divider()
 
@@ -92,14 +114,22 @@ if "data" not in st.session_state:
 else:
     dataset = st.session_state["data"]
 
-# Configurar e exibir o mapa de calor no Streamlit
-mapa = configure_heatmap(dataset)
+    #chama a função para exibir o mapa de preços
+    price_heatmap = configure_price_heatmap(dataset)
+    price_heatmap.update_layout(height=500, width=850)
+    st.plotly_chart(price_heatmap, use_container_width=True, theme=None)
 
-st.markdown("Abaixo o mapa de calor que realça áreas onde há uma concentração maior de imóveis")
-folium_static(mapa, height=400, width=850)
+    # mapa de concentração
+    st.markdown('Mapa da concentração maior de imóveis')
+    mapa_concentracao = folium.Map([38.55, -7.88], zoom_start=5, width="%100", height="%100")
+    locations = list(zip(dataset.latitude, dataset.longitude))
+    cluster = plugins.MarkerCluster(locations=locations,
+                                    popups=dataset["name"].tolist())
+    mapa_concentracao.add_child(cluster)
+    folium_static(mapa_concentracao, height=300, width=1000)
 
-# Link para o GitHub
-st.sidebar.markdown("[GitHub Repository](https://github.com/gbaere)")
+    # Link para o GitHub
+    st.sidebar.markdown("[GitHub Repository](https://github.com/gbaere)")
 
-# Gerar e abrir o mapa externamente - uso para debugar o mapa, quando o processamento fica pesado
-# generate_and_open_map(dataset)
+    # Gerar e abrir o mapa externamente - uso para debugar o mapa, quando o processamento fica pesado
+    # generate_and_open_map(dataset)
