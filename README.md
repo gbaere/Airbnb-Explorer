@@ -13,7 +13,7 @@
 
 Continuing my studies in Data Science, I developed an app with Streamlit, using Pandas and Folium to perform statistical and spatial analysis of Airbnb information
 
-New update 3 - Nova atualização, inclui um mapa com a distribuição das unidades e representação da variação dos preços por faixa de cor
+New update 3 - Nova atualização, inclui um mapa com a distribuição das unidades e representação da variação dos preços por faixa de cores
 
 ![image](https://github.com/gbaere/Airbnb-Explorer/assets/397533/8555a7fc-1956-4c91-8e4b-bef6b87c3d87)
 
